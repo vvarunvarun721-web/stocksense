@@ -13,7 +13,7 @@ async function processProduct(url) {
     const scraped = await scrapeProduct(url);
 
     console.log("Scraped Successfully");
-    console.log(scraped);
+    console.dir(scraped, { depth: null });
 
     console.log("-----------------------------------------");
 
@@ -21,41 +21,26 @@ async function processProduct(url) {
 
     const normalized = await normalizeProduct(scraped.title);
 
-    console.log(normalizedText);
-
-   
+    console.dir(normalized, { depth: null });
 
     console.log("-----------------------------------------");
 
     console.log("Step 3 : Generate Search Queries");
 
-    console.log("========== NORMALIZED ==========");
-    console.dir(normalized, { depth: null });
-
     const queries = generateSearchQueries(normalized);
 
-    console.log("========== GENERATED QUERIES ==========");
     console.dir(queries, { depth: null });
 
-    console.log("Generated Queries:");
-    console.log(queries);
-
-    console.log(queries);
+    console.log("-----------------------------------------");
 
     return {
-
         scraped,
-
         normalized,
-
         queries
-
     };
 
 }
 
 module.exports = {
-
     processProduct
-
 };
