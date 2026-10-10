@@ -1,24 +1,27 @@
 function detectPlatform(url) {
+  if (!url) return "unknown";
 
-    if (!url) return "unknown";
+  url = url.toLowerCase();
 
-    url = url.toLowerCase();
+  if (url.includes("amazon")) return "amazon";
 
-    if (url.includes("amazon")) return "amazon";
+  if (url.includes("flipkart")) return "flipkart";
 
-    if (url.includes("flipkart")) return "flipkart";
+  if (url.includes("myntra")) return "myntra";
 
-    if (url.includes("myntra")) return "myntra";
+  if (url.includes("ajio")) return "ajio";
 
-    if (url.includes("ajio")) return "ajio";
+  if (url.includes("meesho")) return "meesho";
 
-    if (url.includes("meesho")) return "meesho";
+  if (url.includes("nykaa")) return "nykaa";
 
-    if (url.includes("croma")) return "croma";
+  if (url.includes("reliance")) return "reliance";
 
-    return "unknown";
+  if (url.includes("tatacliq")) return "tatacliq";
+
+  return "unknown";
 }
 
 module.exports = {
-    detectPlatform
+  detectPlatform,
 };
