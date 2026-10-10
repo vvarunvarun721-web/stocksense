@@ -12,7 +12,7 @@ module.exports = {
 
         productCards: "[data-component-type='s-search-result']",
 
-        title: "h2 span",
+        title: "[data-cy='title-recipe'] h2",
 
         price: ".a-price-whole",
 

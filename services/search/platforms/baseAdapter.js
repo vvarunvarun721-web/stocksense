@@ -6,26 +6,56 @@ class BaseAdapter {
 
     }
 
+
     normalize(product) {
 
         return {
 
-            platform: this.platform,
+            platform:
+                this.platform,
 
-            title: product.title || null,
+            title:
+                product.title ??
+                null,
 
-            price: product.price || null,
+            price:
+                product.price ??
+                null,
 
-            image: product.image || null,
+            image:
+                product.image ??
+                null,
 
-            url: product.url || null,
+            url:
+                product.url ??
+                null,
 
-            availability: product.availability || false
+            rating:
+                product.rating ??
+                null,
+
+            reviews:
+                product.reviews ??
+                null,
+
+            availability:
+                product.availability ??
+                false
 
         };
 
     }
 
+
+    async search(query) {
+
+        throw new Error(
+            `${this.platform} search() not implemented`
+        );
+
+    }
+
 }
+
 
 module.exports = BaseAdapter;

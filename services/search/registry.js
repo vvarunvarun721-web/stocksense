@@ -1,21 +1,61 @@
-const amazon = require("./platforms/amazon");
-const flipkart = require("./platforms/flipkart");
-const croma = require("./platforms/croma");
-const reliance = require("./platforms/reliance");
-const tatacliq = require("./platforms/tatacliq");
-const vijaysales = require("./platforms/vijaysales");
-const myntra = require("./platforms/myntra");
-const ajio = require("./platforms/ajio");
-const meesho = require("./platforms/meesho");
+const amazon =
+    require("./platforms/amazon");
 
-module.exports = [
+const flipkart =
+    require("./platforms/flipkart");
+
+const myntra =
+    require("./platforms/myntra");
+
+const ajio =
+    require("./platforms/ajio");
+
+const meesho =
+    require("./platforms/meesho");
+
+const reliance =
+    require("./platforms/reliance");
+
+const tatacliq =
+    require("./platforms/tatacliq");
+
+const nykaa =
+    require("./platforms/nykaa");
+
+console.log("\n==========================================");
+console.log("🔍 STOCKSENSE ADAPTER RUNTIME CHECK");
+console.log("==========================================");
+
+for (const adapter of [
     amazon,
     flipkart,
-    croma,
-    reliance,
-    tatacliq,
-    vijaysales,
     myntra,
     ajio,
-    meesho
+    meesho,
+    reliance,
+    tatacliq
+]) {
+    console.log(
+        `${adapter.platform}:`,
+        "searchFast =",
+        typeof adapter.searchFast,
+        "| search =",
+        typeof adapter.search
+    );
+}
+
+console.log("==========================================\n");
+
+module.exports = [
+
+    amazon,
+    flipkart,
+    myntra,
+    ajio,
+    meesho,
+    reliance,
+    tatacliq,
+    nykaa
+
+
 ];

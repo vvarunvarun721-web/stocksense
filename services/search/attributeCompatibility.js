@@ -1,0 +1,4 @@
+checkAttributeCompatibility(
+    originalProduct,
+    candidate
+)

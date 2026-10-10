@@ -20,13 +20,7 @@ async function analyzeProduct(req, res) {
 
         const result = await processProduct(url);
 
-        res.json({
-
-            success: true,
-
-            data: result
-
-        });
+        res.json(result);
 
     } catch (err) {
 

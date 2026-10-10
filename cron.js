@@ -1,66 +1,396 @@
-const cron = require('node-cron');
-const Product = require('./models/Product');
-const { scrapeAmazon } = require('./scraper/scrape');
+const cron =
+  require("node-cron");
 
-// The actual check logic — reusable by both cron AND a manual trigger route
-async function runPriceCheck() {
-  console.log('🔍 Running price/stock check...');
-  const products = await Product.find({});
-  const updates = [];
 
-  for (const product of products) {
-    const result = await scrapeAmazon(product.url);
+const {
+  updateAllProducts
+} =
+  require(
+    "./services/notification/productScheduler"
+  );
 
-    if (result.error) {
-      console.log(`⚠️ Failed to scrape ${product.url}: ${result.error}`);
-      updates.push({ url: product.url, status: 'error', error: result.error });
-      continue;
-    }
 
-    const priceChanged = result.price !== null && result.price !== product.currentPrice;
-    const stockChanged = result.inStock !== product.inStock;
+const watchlistModule =
+  require(
+    "./services/notification/watchlistScheduler"
+  );
 
-    if (priceChanged) {
-      product.priceHistory.push({ price: result.price, checkedAt: new Date() });
-      product.currentPrice = result.price;
-      console.log(`💰 Price changed for ${product.url}: ${result.price}`);
-    }
 
-    if (stockChanged) {
-      product.inStock = result.inStock;
-      console.log(`📦 Stock status changed for ${product.url}: ${result.inStock}`);
-    }
+/*
+=====================================================
+CONFIGURATION
+=====================================================
+*/
 
-    if (result.name && !product.name) {
-      product.name = result.name;
-    }
+/*
+Background scheduler is OFF unless explicitly enabled.
 
-    if (priceChanged || stockChanged) {
-      await product.save();
-    }
+Development:
+SCHEDULER_ENABLED=false
 
-    updates.push({
-      url: product.url,
-      name: product.name,
-      price: product.currentPrice,
-      inStock: product.inStock,
-      priceChanged,
-      stockChanged
-    });
+Production:
+SCHEDULER_ENABLED=true
+*/
 
-    // Small delay between products so we don't hammer the site all at once
-    await new Promise(resolve => setTimeout(resolve, 1500));
+const SCHEDULER_ENABLED =
+  String(
+    process.env.SCHEDULER_ENABLED ||
+    "false"
+  )
+    .trim()
+    .toLowerCase() === "true";
+
+
+/*
+Default schedule:
+every 30 minutes.
+
+The schedule can be overridden safely through
+.env without changing source code.
+*/
+
+const SCHEDULER_CRON =
+  String(
+    process.env.SCHEDULER_CRON ||
+    "*/30 * * * *"
+  ).trim();
+
+
+/*
+=====================================================
+WATCHLIST FUNCTION RESOLUTION
+=====================================================
+
+Supports the existing possible export names.
+=====================================================
+*/
+
+const runWatchlistScheduler =
+  watchlistModule.runWatchlistScheduler ||
+  watchlistModule.runWatchlist ||
+  watchlistModule.checkWatchlists ||
+  watchlistModule.run;
+
+
+/*
+=====================================================
+STATE
+=====================================================
+*/
+
+let schedulerRunning =
+  false;
+
+
+let schedulerTask =
+  null;
+
+
+/*
+=====================================================
+RUN COMPLETE SCHEDULER
+=====================================================
+*/
+
+async function runScheduler() {
+
+  /*
+  ---------------------------------------------------
+  SAFETY GUARD
+  ---------------------------------------------------
+
+  This protects us even if runScheduler() is called
+  manually while the previous cycle is still running.
+  ---------------------------------------------------
+  */
+
+  if (
+    schedulerRunning
+  ) {
+
+    console.log(
+      "⏭️ Scheduler already running. Skipping this cycle."
+    );
+
+    return;
+
   }
 
-  console.log('✅ Check complete.');
-  return updates;
+
+  schedulerRunning =
+    true;
+
+
+  try {
+
+    console.log(
+      "\n⏰ Scheduler Started"
+    );
+
+
+    /*
+    =============================================
+    STEP 1
+    UPDATE PRODUCTS
+    =============================================
+    */
+
+    await updateAllProducts();
+
+
+    /*
+    =============================================
+    STEP 2
+    WATCHLIST NOTIFICATIONS
+    =============================================
+    */
+
+    if (
+      typeof runWatchlistScheduler ===
+      "function"
+    ) {
+
+      await runWatchlistScheduler();
+
+    }
+    else {
+
+      console.warn(
+        "⚠️ Watchlist scheduler function not found. Skipping watchlist check."
+      );
+
+    }
+
+
+    console.log(
+      "✅ Scheduler Finished\n"
+    );
+
+  }
+  catch (error) {
+
+    console.error(
+      "❌ Scheduler failed:",
+      error?.message ||
+      error
+    );
+
+  }
+  finally {
+
+    schedulerRunning =
+      false;
+
+  }
+
 }
 
-// Runs automatically every 30 minutes
-cron.schedule('*/30 * * * *', () => {
-  runPriceCheck();
-});
 
-console.log('⏰ Price/stock scheduler started — checking every 30 minutes.');
+/*
+=====================================================
+START SCHEDULER
+=====================================================
 
-module.exports = { runPriceCheck };
+Important:
+This function ONLY registers the background job.
+
+It does NOT immediately execute runScheduler().
+=====================================================
+*/
+
+function startScheduler() {
+
+  /*
+  ---------------------------------------------------
+  ALREADY STARTED
+  ---------------------------------------------------
+  */
+
+  if (
+    schedulerTask
+  ) {
+
+    console.log(
+      "⏭️ Scheduler already initialized."
+    );
+
+    return schedulerTask;
+
+  }
+
+
+  /*
+  ---------------------------------------------------
+  DISABLED
+  ---------------------------------------------------
+  */
+
+  if (
+    !SCHEDULER_ENABLED
+  ) {
+
+    console.log(
+      "⏸️ Background scheduler disabled."
+    );
+
+    console.log(
+      "   Set SCHEDULER_ENABLED=true to enable it."
+    );
+
+    return null;
+
+  }
+
+
+  /*
+  ---------------------------------------------------
+  CRON EXPRESSION VALIDATION
+  ---------------------------------------------------
+  */
+
+  if (
+    typeof cron.validate ===
+    "function" &&
+    !cron.validate(
+      SCHEDULER_CRON
+    )
+  ) {
+
+    console.error(
+      `❌ Invalid scheduler cron expression: ${SCHEDULER_CRON}`
+    );
+
+    return null;
+
+  }
+
+
+  /*
+  ---------------------------------------------------
+  REGISTER TASK
+  ---------------------------------------------------
+  */
+
+  try {
+
+    schedulerTask =
+      cron.schedule(
+        SCHEDULER_CRON,
+        runScheduler
+      );
+
+
+    console.log(
+      `⏰ Price/stock scheduler started — ${SCHEDULER_CRON}`
+    );
+
+
+    return schedulerTask;
+
+  }
+  catch (error) {
+
+    schedulerTask =
+      null;
+
+
+    console.error(
+      "❌ Failed to start scheduler:",
+      error?.message ||
+      error
+    );
+
+
+    return null;
+
+  }
+
+}
+
+
+/*
+=====================================================
+STOP SCHEDULER
+=====================================================
+
+Useful for graceful shutdown and testing.
+=====================================================
+*/
+
+function stopScheduler() {
+
+  if (
+    !schedulerTask
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    if (
+      typeof schedulerTask.stop ===
+      "function"
+    ) {
+
+      schedulerTask.stop();
+
+    }
+
+
+    /*
+    Some node-cron versions expose destroy().
+    The typeof check prevents compatibility errors.
+    */
+
+    if (
+      typeof schedulerTask.destroy ===
+      "function"
+    ) {
+
+      schedulerTask.destroy();
+
+    }
+
+  }
+  catch (error) {
+
+    console.error(
+      "⚠️ Scheduler shutdown warning:",
+      error?.message ||
+      error
+    );
+
+  }
+  finally {
+
+    schedulerTask =
+      null;
+
+  }
+
+
+  console.log(
+    "🛑 Scheduler stopped."
+  );
+
+}
+
+
+/*
+=====================================================
+EXPORT
+=====================================================
+*/
+
+module.exports = {
+
+  runScheduler,
+
+  startScheduler,
+
+  stopScheduler
+
+};

@@ -1,5 +1,19 @@
 node_modules/
+frontend/node_modules/
+frontend/dist/
 .env
 coverage/
 logs/
 *.log
+!.env.example
+# Local diagnostic artifacts
+/adapter-audit.txt
+/latest-run.txt
+/amazon-search-test.png
+/amazon-test.png
+/debug-*.png
+/flipkart-search.png
+
+# Local backup copies
+*backup*.js
+*.backup
