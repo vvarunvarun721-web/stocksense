@@ -1,7 +1,7 @@
 const Product = require("../models/Product");
 const Watchlist = require("../models/Watchlist");
 const Notification = require("../models/Notification");
-const SearchHistory = require("../models/SearchHistory");
+const SearchHistory = require("../models/searchHistory");
 
 async function getDashboard(req, res) {
 
