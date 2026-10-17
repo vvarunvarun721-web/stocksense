@@ -1,4 +1,4 @@
-const SearchHistory = require("../../models/searchHistory");
+const SearchHistory = require("../../models/SearchHistory");
 
 async function saveSearch(userId, query) {
 
