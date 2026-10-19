@@ -1,0 +1,21 @@
+{
+	"dbConnectionString": "postgres://postgres@localhost:63161/postgres",
+	"geolocation": {
+		"data": {
+			"city": "Bengaluru",
+			"country": {
+				"code": "IN",
+				"name": "India"
+			},
+			"subdivision": {
+				"code": "KA",
+				"name": "Karnataka"
+			},
+			"timezone": "Asia/Kolkata",
+			"latitude": 12.9753,
+			"longitude": 77.591,
+			"postalCode": "562114"
+		},
+		"timestamp": 1791697044388
+	}
+}

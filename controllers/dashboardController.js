@@ -1,96 +1,59 @@
 const Product = require("../models/Product");
 const Watchlist = require("../models/Watchlist");
 const Notification = require("../models/Notification");
-const SearchHistory = require("../models/SearchHistory");
+const SearchHistory = require("../models/searchHistory");
 
 async function getDashboard(req, res) {
+  try {
+    const userId = req.user.id;
 
-    try {
+    const [products, watchlist, notifications, recentSearches] =
+      await Promise.all([
+        Product.countDocuments(),
 
-        const userId = req.user.id;
+        Watchlist.countDocuments({
+          userId,
+        }),
 
-        const [
+        Notification.countDocuments({
+          userId,
 
-            products,
+          isRead: false,
+        }),
 
-            watchlist,
+        SearchHistory.find({
+          userId,
+        })
 
-            notifications,
+          .sort({
+            createdAt: -1,
+          })
 
-            recentSearches
+          .limit(5),
+      ]);
 
-        ] = await Promise.all([
+    res.json({
+      success: true,
 
-            Product.countDocuments(),
+      dashboard: {
+        totalProducts: products,
 
-            Watchlist.countDocuments({
+        watchlist,
 
-                userId
+        unreadNotifications: notifications,
 
-            }),
+        recentSearches,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
 
-            Notification.countDocuments({
-
-                userId,
-
-                isRead: false
-
-            }),
-
-            SearchHistory
-
-                .find({
-
-                    userId
-
-                })
-
-                .sort({
-
-                    createdAt: -1
-
-                })
-
-                .limit(5)
-
-        ]);
-
-        res.json({
-
-            success: true,
-
-            dashboard: {
-
-                totalProducts: products,
-
-                watchlist,
-
-                unreadNotifications: notifications,
-
-                recentSearches
-
-            }
-
-        });
-
-    }
-
-    catch (err) {
-
-        res.status(500).json({
-
-            success: false,
-
-            message: err.message
-
-        });
-
-    }
-
+      message: err.message,
+    });
+  }
 }
 
 module.exports = {
-
-    getDashboard
-
+  getDashboard,
 };
