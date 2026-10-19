@@ -122,9 +122,14 @@ first real product request.
 */
 
 async function startServer() {
+  // Start Express immediately so Railway can connect to the service.
+  app.listen(
+    PORT,
+    () => console.log(`Server running on port ${PORT}`)
+  );
 
+  // Warm up Playwright in the background.
   try {
-
     console.log("🔥 Warming Amazon scraper browser...");
 
     const browser = await getBrowser();
@@ -136,31 +141,17 @@ async function startServer() {
         waitUntil: "commit",
         timeout: 5000
       })
-      .catch(() => { });
+      .catch(() => {});
 
     await page.close();
 
     console.log("✅ Amazon scraper browser warmed successfully");
-
-  }
-  catch (error) {
-
+  } catch (error) {
     console.error(
       "⚠️ Browser warm-up failed:",
       error.message
     );
-
   }
-
-
-  app.listen(
-    PORT,
-    () =>
-      console.log(
-        `Server running on port ${PORT}`
-      )
-  );
-
 }
 
 startServer();
